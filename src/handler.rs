@@ -166,9 +166,36 @@ pub async fn handle_user_login(
     "token": token
     }).to_string()
   );
-  
+
   response
     .headers_mut()
     .insert(header::SET_COOKIE, cookie.to_string().parse().unwrap());
   Ok(response)  
+}
+
+pub async fn handle_user_logout() -> Result<impl IntoResponse, (StatusCode, Json<serde_json::value>)> {
+    let cookie = Cookie::build(("token", ""))
+      .path('/')
+      .max_age(time::Duration::hours(-1))
+      .same_state(SameSite::Lax)
+      http_only(true);
+
+    let response = Response::new(json!({"status": "success"}).to_string());
+      response.header_mut()
+      .insert(header::SET_COOKIE, cookie.to_string().parse().unwrap());
+
+    Ok(response)  
+}
+
+pub async fn handle_get_user(
+  Extension(user): Extension<User>
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::value>)> {
+  let json_response = serde_json::json!({
+    "status": "success",
+    "data": serde_json::json!({
+      "user": filter_user_record(&user)
+    })
+  });
+  
+  Ok(Json(json_response))
 }
